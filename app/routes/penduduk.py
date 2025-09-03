@@ -3,7 +3,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.database import get_db
 from app.models.penduduk import Penduduk
-from app.schemas.penduduk import PendudukCreate, PendudukUpdate, PendudukOut
+from app.schemas.penduduk import (
+    PendudukCreate,
+    PendudukUpdate,
+    PendudukOut,
+    PendudukPagination
+)
 from app.auth.security import get_current_user
 from app.utils.pagination import paginate
 from . import get_or_404
@@ -12,14 +17,14 @@ from sqlalchemy.orm import selectinload
 router = APIRouter(prefix="/penduduks", tags=["Penduduks"])
 
 
-@router.get("/", response_model=list[PendudukOut])
+@router.get("/", response_model=PendudukPagination)
 async def list_penduduk(
     db: AsyncSession = Depends(get_db),
     # _=Depends(get_current_user),
     keluarga_id: int | None = None,
     nik: str | None = None,
     nama: str | None = None,
-    page: int = 1, size: int = 20
+    page: int = 1, size: int = 10
 ):
     stmt = select(Penduduk)
     if keluarga_id:
@@ -30,8 +35,8 @@ async def list_penduduk(
         stmt = stmt.where(Penduduk.nama_lengkap.ilike(f"%{nama}%"))
     data = await paginate(db, stmt, page, size)
     # kalau mau return meta:
-    # return data
-    return data["items"]
+    return data
+    # return data["items"]
 
 
 @router.get("/{id}", response_model=PendudukOut)

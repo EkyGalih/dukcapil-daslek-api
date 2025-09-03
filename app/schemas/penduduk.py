@@ -48,3 +48,14 @@ class PendudukOut(PendudukBase):
     updated_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class Pagination(BaseModel):
+    total: int
+    page: int
+    size: int
+    pages: int
+
+
+class PendudukPagination(Pagination):
+    items: list[PendudukOut]
