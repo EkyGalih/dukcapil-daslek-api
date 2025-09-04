@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.inspection import inspect
 from sqlalchemy import select
 from app.database import get_db
 from app.models.penduduk import Penduduk
@@ -78,13 +79,16 @@ async def delete_penduduk(
 
 @router.get("/{id}/detail")
 async def get_penduduk_detail(
-    id: int, db: AsyncSession = Depends(get_db), _=Depends(get_current_user)
+    id: int, db: AsyncSession = Depends(get_db),
+    # _=Depends(get_current_user)
 ):
     stmt = (
         select(Penduduk)
         .where(Penduduk.id == id)
         .options(
-            selectinload(Penduduk.pendidikan), selectinload(Penduduk.kesehatan)
+            selectinload(Penduduk.pendidikan),
+            selectinload(Penduduk.kesehatan),
+            selectinload(Penduduk.keluarga)
         )
     )
     res = await db.execute(stmt)
@@ -92,10 +96,14 @@ async def get_penduduk_detail(
     if not p:
         raise HTTPException(status_code=404, detail="penduduks not found")
     return {
-        "id": p.id,
-        "keluarga_id": p.keluarga_id,
-        "nik": p.nik,
-        "nama_lengkap": p.nama_lengkap,
+        **{c.key: getattr(p, c.key) for c in inspect(p).mapper.column_attrs},
+        "keluarga": (
+            {
+                "id": p.keluarga.id,
+                "nama_kepala_keluarga": p.keluarga.nama_kepala_keluarga
+            }
+            if p.keluarga else None
+        ),
         "pendidikan": (
             {
                 "id": p.pendidikan.id,
