@@ -21,7 +21,7 @@ router = APIRouter(prefix="/penduduks", tags=["Penduduks"])
 @router.get("/", response_model=PendudukPagination)
 async def list_penduduk(
     db: AsyncSession = Depends(get_db),
-    # _=Depends(get_current_user),
+    _=Depends(get_current_user),
     keluarga_id: int | None = None,
     nik: str | None = None,
     nama: str | None = None,

@@ -34,7 +34,7 @@ def create_access_token(data: dict, expire_minutes: int | None = None) -> str:
     return jwt.encode(
         to_encode,
         auth_settings.JWT_SECRET,
-        algorithm=auth_settings.JWT_ALG
+        algorithms=auth_settings.JWT_ALG
     )
 
 
@@ -49,7 +49,7 @@ async def get_current_user(
     try:
         payload = jwt.decode(
             token, auth_settings.JWT_SECRET,
-            algorithm=[auth_settings.JWT_ALG]
+            algorithms=[auth_settings.JWT_ALG]
         )
         sub: str = payload.get("sub")
         if sub is None:
