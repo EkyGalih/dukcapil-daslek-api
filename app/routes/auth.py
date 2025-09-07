@@ -7,7 +7,8 @@ from app.schemas.user import UserCreate, UserLogin, UserOut
 from app.auth.security import (
     hash_password,
     verify_password,
-    create_access_token
+    create_access_token,
+    get_current_user
 )
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
@@ -48,3 +49,8 @@ async def login(payload: UserLogin, db: AsyncSession = Depends(get_db)):
         )
     token = create_access_token({"sub": str(user.id), "role": user.role})
     return {"access_token": token, "token_type": "bearer"}
+
+
+@router.get("/me", response_model=UserOut)
+async def read_users_me(current: User = Depends(get_current_user)):
+    return current

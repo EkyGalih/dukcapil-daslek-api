@@ -34,7 +34,7 @@ def create_access_token(data: dict, expire_minutes: int | None = None) -> str:
     return jwt.encode(
         to_encode,
         auth_settings.JWT_SECRET,
-        algorithms=auth_settings.JWT_ALG
+        algorithm=auth_settings.JWT_ALG
     )
 
 
