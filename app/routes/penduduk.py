@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.inspection import inspect
 from sqlalchemy import select
 from app.database import get_db
+from typing import Optional
 from app.models.penduduk import Penduduk
 from app.schemas.penduduk import (
     PendudukCreate,
@@ -22,18 +23,18 @@ router = APIRouter(prefix="/penduduks", tags=["Penduduks"])
 async def list_penduduk(
     db: AsyncSession = Depends(get_db),
     _=Depends(get_current_user),
-    keluarga_id: int | None = None,
-    nik: str | None = None,
-    nama: str | None = None,
+    search: Optional[str] = None,
     page: int = 1, size: int = 10
 ):
     stmt = select(Penduduk)
-    if keluarga_id:
-        stmt = stmt.where(Penduduk.keluarga_id == keluarga_id)
-    if nik:
-        stmt = stmt.where(Penduduk.nik == nik)
-    if nama:
-        stmt = stmt.where(Penduduk.nama_lengkap.ilike(f"%{nama}%"))
+    if search:
+        if search.isdigit():
+            stmt = stmt.where(Penduduk.nik.ilike(f"%{search}%"))
+        else:
+            stmt = stmt.where(Penduduk.nama_lengkap.ilike(f"%{search}%"))
+
+    # order by updated_at DESC
+    stmt = stmt.order_by(Penduduk.updated_at.desc())
     data = await paginate(db, stmt, page, size)
     # kalau mau return meta:
     return data
@@ -41,13 +42,19 @@ async def list_penduduk(
 
 
 @router.get("/{id}", response_model=PendudukOut)
-async def get_penduduk(id: int, db: AsyncSession = Depends(get_db)):
+async def get_penduduk(
+    id: int,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user)
+):
     return await get_or_404(db, Penduduk, id)
 
 
 @router.post("/", response_model=PendudukOut, status_code=201)
 async def create_penduduk(
-    payload: PendudukCreate, db: AsyncSession = Depends(get_db)
+    payload: PendudukCreate,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user)
 ):
     obj = Penduduk(**payload.model_dump())
     db.add(obj)
@@ -58,7 +65,10 @@ async def create_penduduk(
 
 @router.put("/{id}", response_model=PendudukOut)
 async def update_penduduk(
-    id: int, payload: PendudukUpdate, db: AsyncSession = Depends(get_db)
+    id: int,
+    payload: PendudukUpdate,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user)
 ):
     obj = await get_or_404(db, Penduduk, id)
     for k, v in payload.model_dump(exclude_unset=True).items():
@@ -80,7 +90,7 @@ async def delete_penduduk(
 @router.get("/{id}/detail")
 async def get_penduduk_detail(
     id: int, db: AsyncSession = Depends(get_db),
-    # _=Depends(get_current_user)
+    _=Depends(get_current_user)
 ):
     stmt = (
         select(Penduduk)
